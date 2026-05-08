@@ -2,17 +2,41 @@ const form = document.querySelector('[data-form="pcdf-aula-captura"]');
 const statusEl = document.querySelector('.form-status');
 const submitBtn = form?.querySelector('button[type="submit"]');
 
+function inferUtmFromReferrer(referrer) {
+  if (!referrer) return { utm_source: 'direto', utm_medium: 'none' };
+  let host = '';
+  try { host = new URL(referrer).hostname.toLowerCase(); } catch (e) { return { utm_source: 'direto', utm_medium: 'none' }; }
+
+  const rules = [
+    { match: ['facebook.com', 'fb.com', 'm.facebook.com', 'l.facebook.com'], source: 'facebook',  medium: 'paid' },
+    { match: ['instagram.com', 'l.instagram.com'],                            source: 'instagram', medium: 'paid' },
+    { match: ['google.com', 'google.com.br'],                                 source: 'google',    medium: 'organic' },
+    { match: ['youtube.com', 'youtu.be', 'm.youtube.com'],                    source: 'youtube',   medium: 'organic' },
+    { match: ['whatsapp.com', 'wa.me', 'chat.whatsapp.com'],                  source: 'whatsapp',  medium: 'referral' },
+    { match: ['t.co', 'twitter.com', 'x.com'],                                source: 'twitter',   medium: 'referral' }
+  ];
+  for (const r of rules) {
+    if (r.match.some((d) => host === d || host.endsWith('.' + d))) {
+      return { utm_source: r.source, utm_medium: r.medium };
+    }
+  }
+  return { utm_source: host, utm_medium: 'referral' };
+}
+
 function getTrackingPayload() {
   const params = new URLSearchParams(window.location.search);
+  const referrer = document.referrer || '';
+  const fallback = inferUtmFromReferrer(referrer);
+
   return {
     origem: 'aula-pcdf-captura',
     pagina: window.location.href,
-    referrer: document.referrer || '',
-    utm_source: params.get('utm_source') || '',
-    utm_medium: params.get('utm_medium') || '',
+    referrer: referrer,
+    utm_source:   params.get('utm_source')   || fallback.utm_source,
+    utm_medium:   params.get('utm_medium')   || fallback.utm_medium,
     utm_campaign: params.get('utm_campaign') || '',
-    utm_content: params.get('utm_content') || '',
-    utm_term: params.get('utm_term') || ''
+    utm_content:  params.get('utm_content')  || '',
+    utm_term:     params.get('utm_term')     || ''
   };
 }
 
