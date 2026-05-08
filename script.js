@@ -8,8 +8,8 @@ function inferUtmFromReferrer(referrer) {
   try { host = new URL(referrer).hostname.toLowerCase(); } catch (e) { return { utm_source: 'direto', utm_medium: 'none' }; }
 
   const rules = [
-    { match: ['facebook.com', 'fb.com', 'm.facebook.com', 'l.facebook.com'], source: 'facebook',  medium: 'paid' },
-    { match: ['instagram.com', 'l.instagram.com'],                            source: 'instagram', medium: 'paid' },
+    { match: ['facebook.com', 'fb.com', 'm.facebook.com', 'l.facebook.com'], source: 'facebook',  medium: 'organic' },
+    { match: ['instagram.com', 'l.instagram.com'],                            source: 'instagram', medium: 'organic' },
     { match: ['google.com', 'google.com.br'],                                 source: 'google',    medium: 'organic' },
     { match: ['youtube.com', 'youtu.be', 'm.youtube.com'],                    source: 'youtube',   medium: 'organic' },
     { match: ['whatsapp.com', 'wa.me', 'chat.whatsapp.com'],                  source: 'whatsapp',  medium: 'referral' },
