@@ -207,13 +207,15 @@ export default async function handler(req, res) {
     utm_campaign: clean(body.utm_campaign),
     utm_content: clean(body.utm_content),
     utm_term: clean(body.utm_term),
+    utm_placement: clean(body.utm_placement),
+    sck: clean(body.sck),
     user_agent: clean(req.headers['user-agent'])
   };
 
   const endpoint = `${supabaseUrl.replace(/\/$/, '')}/rest/v1/${encodeURIComponent(table)}`;
 
-  try {
-    const response = await fetch(endpoint, {
+  async function insertLead(payload) {
+    return fetch(endpoint, {
       method: 'POST',
       headers: {
         apikey: serviceRoleKey,
@@ -221,13 +223,28 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify(lead)
+      body: JSON.stringify(payload)
     });
+  }
 
+  try {
+    let response = await insertLead(lead);
+
+    // Fallback: se a tabela ainda nao tem utm_placement/sck, refazer insert sem esses campos
     if (!response.ok) {
       const detail = await response.text();
-      console.error('Supabase insert failed', response.status, detail);
-      return json(res, 502, { ok: false, error: 'Não consegui salvar a inscrição agora.' });
+      if (response.status === 400 && /utm_placement|sck/.test(detail)) {
+        const { utm_placement, sck, ...legacyLead } = lead;
+        response = await insertLead(legacyLead);
+        if (!response.ok) {
+          const detail2 = await response.text();
+          console.error('Supabase insert failed (fallback)', response.status, detail2);
+          return json(res, 502, { ok: false, error: 'Não consegui salvar a inscrição agora.' });
+        }
+      } else {
+        console.error('Supabase insert failed', response.status, detail);
+        return json(res, 502, { ok: false, error: 'Não consegui salvar a inscrição agora.' });
+      }
     }
 
     let activeCampaign = { skipped: true };
